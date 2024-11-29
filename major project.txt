@@ -1,0 +1,102 @@
+// Arduino-based Robot that Follows Humans
+// Ensure AFMotor and NewPing libraries are installed before uploading
+#include <NewPing.h>
+#include <Servo.h>
+#include <AFMotor.h>
+
+// Pin Definitions
+#define LEFT_SENSOR A5     // Left IR sensor on analog pin A5
+#define RIGHT_SENSOR A1    // Right IR sensor on analog pin A1
+#define TRIGGER_PIN A2     // Ultrasonic sensor trigger on A2
+#define ECHO_PIN A3        // Ultrasonic sensor echo on A3
+#define MAX_DIST 200       // Maximum distance in cm for the ultrasonic sensor
+
+// Variables
+unsigned int currentDistance = 0; // Distance from ultrasonic sensor
+unsigned int rightSensorValue = 0; // Right IR sensor value
+unsigned int leftSensorValue = 0;  // Left IR sensor value
+int thresholdDistance = 10;       // Threshold distance in cm
+
+// Motor objects
+AF_DCMotor motorA(1, MOTOR12_1KHZ);
+AF_DCMotor motorB(2, MOTOR12_1KHZ);
+AF_DCMotor motorC(3, MOTOR34_1KHZ);
+AF_DCMotor motorD(4, MOTOR34_1KHZ);
+
+Servo servoMotor; // Servo object for ultrasonic sweeping
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DIST); // Ultrasonic sensor object
+
+void setup() {
+    Serial.begin(9600); // Initialize serial communication for debugging
+    servoMotor.attach(10); // Attach servo to digital pin 10
+
+    // Sweep servo for initialization (optional)
+    for (int pos = 90; pos <= 180; pos++) {
+        servoMotor.write(pos);
+        delay(15);
+    }
+    for (int pos = 180; pos >= 0; pos--) {
+        servoMotor.write(pos);
+        delay(15);
+    }
+    servoMotor.write(90); // Set servo to center position
+
+    // Set sensor pins as inputs
+    pinMode(RIGHT_SENSOR, INPUT);
+    pinMode(LEFT_SENSOR, INPUT);
+    haltMotors(); // Ensure motors are stopped initially
+}
+
+void loop() {
+    delay(50); // Short delay between sensor readings
+    currentDistance = sonar.ping_cm(); // Get distance in cm from ultrasonic sensor
+    Serial.print("Distance: ");
+    Serial.println(currentDistance); // Output distance to serial monitor
+
+    // Read IR sensors (active low logic assumed)
+    rightSensorValue = !digitalRead(RIGHT_SENSOR);
+    leftSensorValue = !digitalRead(LEFT_SENSOR);
+
+    Serial.print("Right Sensor: ");
+    Serial.println(rightSensorValue);
+    Serial.print("Left Sensor: ");
+    Serial.println(leftSensorValue);
+
+    if (currentDistance > 1 && currentDistance < thresholdDistance) {
+        // Move Forward if object is within range
+        setMotorSpeed(130, FORWARD);
+    } else if (rightSensorValue == 1 && leftSensorValue == 0) {
+        // Turn Right
+        setMotorSpeed(150, FORWARD, BACKWARD);
+        delay(150); // Adjust turning delay as needed
+    } else if (rightSensorValue == 0 && leftSensorValue == 1) {
+        // Turn Left
+        setMotorSpeed(150, BACKWARD, FORWARD);
+        delay(150); // Adjust turning delay as needed
+    } else if (currentDistance > thresholdDistance) {
+        haltMotors(); // Stop if no object is detected within range
+    }
+}
+
+void setMotorSpeed(int speed, int directionA = FORWARD, int directionB = FORWARD) {
+    motorA.setSpeed(speed);
+    motorA.run(directionA);
+    motorB.setSpeed(speed);
+    motorB.run(directionA);
+    motorC.setSpeed(speed);
+    motorC.run(directionB);
+    motorD.setSpeed(speed);
+    motorD.run(directionB);
+}
+
+void haltMotors() {
+    // Stop all motors
+    motorA.setSpeed(0);
+    motorA.run(RELEASE);
+    motorB.setSpeed(0);
+    motorB.run(RELEASE);
+    motorC.setSpeed(0);
+    motorC.run(RELEASE);
+    motorD.setSpeed(0);
+    motorD.run(RELEASE);
+}
