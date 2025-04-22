@@ -80,7 +80,7 @@ void loop() {
         motor3.run(BACKWARD);
         motor4.setSpeed(100);
         motor4.run(BACKWARD);
-        delay(150);
+        delay(100);
     } else if ((rightValue == 0) && (leftValue == 1)) {
         // Turn Left
         motor1.setSpeed(100);
