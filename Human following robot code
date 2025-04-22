@@ -11,7 +11,7 @@
 unsigned int distance = 0;   // Variable to store ultrasonic sensor distance
 unsigned int rightValue = 0; // Variable to store Right IR sensor value
 unsigned int leftValue = 0;  // Variable to store Left IR sensor value
-int thresholdDistance = 300;  // Threshold distance in cm
+int thresholdDistance = 25;  // Threshold distance in cm
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);  // NewPing setup of pins and maximum distance
 
